@@ -5,6 +5,7 @@ import com.back.domain.member.member.service.MemberService;
 import com.back.domain.post.post.dto.PostDto;
 import com.back.domain.post.post.entity.Post;
 import com.back.domain.post.post.service.PostService;
+import com.back.global.globalExceptionHandler.UnauthenticatedException;
 import com.back.global.rsData.RsData;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -77,10 +78,12 @@ public class ApiV1PostController {
     @Transactional
     @Operation(summary = "작성")
     public RsData<PostDto> write(
+            @RequestParam(defaultValue = "0") int actorId,
             @RequestBody @Valid PostWriteReqBody reqBody
     ) {
-        // 아직 인증 기능이 없으므로 일단 작성자는 user1로 고정
-        Member actor = memberService.findByUsername("user1").get();
+        Member actor = memberService.findById(actorId).orElseThrow(
+                UnauthenticatedException::new
+        );
 
         Post post = postService.write(actor, reqBody.title, reqBody.content);
 
