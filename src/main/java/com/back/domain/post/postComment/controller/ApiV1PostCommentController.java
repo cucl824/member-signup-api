@@ -59,10 +59,17 @@ public class ApiV1PostCommentController {
     @Operation(summary = "삭제")
     public RsData<Void> delete(
             @PathVariable int postId,
-            @PathVariable int id
+            @PathVariable int id,
+            @RequestParam(defaultValue = "0") int actorId
     ) {
+        Member actor = memberService.findById(actorId).orElseThrow(
+                UnauthenticatedException::new
+        );
+
         Post post = postService.findById(postId).get();
         PostComment postComment = post.findCommentById(id).get();
+
+        postComment.checkActorCanDelete(actor);
 
         postService.deleteComment(post, postComment);
 
