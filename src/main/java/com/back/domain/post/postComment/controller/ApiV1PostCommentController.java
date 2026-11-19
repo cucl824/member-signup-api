@@ -6,6 +6,7 @@ import com.back.domain.post.post.entity.Post;
 import com.back.domain.post.post.service.PostService;
 import com.back.domain.post.postComment.dto.PostCommentDto;
 import com.back.domain.post.postComment.entity.PostComment;
+import com.back.global.globalExceptionHandler.UnauthenticatedException;
 import com.back.global.rsData.RsData;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -111,12 +112,14 @@ public class ApiV1PostCommentController {
     @Operation(summary = "작성")
     public RsData<PostCommentDto> write(
             @PathVariable int postId,
+            @RequestParam(defaultValue = "0") int actorId,
             @Valid @RequestBody PostCommentWriteReqBody reqBody
     ) {
-        Post post = postService.findById(postId).get();
+        Member actor = memberService.findById(actorId).orElseThrow(
+                UnauthenticatedException::new
+        );
 
-        // 아직 인증 기능이 없으므로 일단 작성자는 user1로 고정
-        Member actor = memberService.findByUsername("user1").get();
+        Post post = postService.findById(postId).get();
 
         PostComment postComment = postService.writeComment(actor, post, reqBody.content);
 
