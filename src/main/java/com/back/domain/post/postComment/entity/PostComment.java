@@ -32,6 +32,11 @@ public class PostComment extends BaseEntity {
             throw new AccessDeniedException();
     }
 
+    public void checkActorCanModify(Member actor) {
+        if (author.getId() != actor.getId())
+            throw new AccessDeniedException();
+    }
+
     public void modify(String content) {
         this.content = content;
     }
