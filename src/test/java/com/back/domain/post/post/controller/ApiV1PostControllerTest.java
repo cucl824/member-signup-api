@@ -240,6 +240,28 @@ public class ApiV1PostControllerTest {
     @DisplayName("글 삭제")
     void t3() throws Exception {
         int id = 1;
+        Member actor = postService.findById(id).get().getAuthor();
+
+        ResultActions resultActions = mvc
+                .perform(
+                        delete("/api/v1/posts/%d?actorId=%d".formatted(id, actor.getId()))
+                )
+                .andDo(print());
+
+        resultActions
+                .andExpect(handler().handlerType(ApiV1PostController.class))
+                .andExpect(handler().methodName("delete"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode").value("200-1"))
+                .andExpect(jsonPath("$.msg").value("%d번 글이 삭제되었습니다.".formatted(id)));
+
+        assertThat(postService.findById(id)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("글 삭제, without actorId")
+    void t12() throws Exception {
+        int id = 1;
 
         ResultActions resultActions = mvc
                 .perform(
@@ -250,9 +272,60 @@ public class ApiV1PostControllerTest {
         resultActions
                 .andExpect(handler().handlerType(ApiV1PostController.class))
                 .andExpect(handler().methodName("delete"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.resultCode").value("200-1"))
-                .andExpect(jsonPath("$.msg").value("%d번 글이 삭제되었습니다.".formatted(id)));
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.resultCode").value("401-1"))
+                .andExpect(jsonPath("$.msg").value("로그인 후 이용해주세요."))
+                .andExpect(jsonPath("$.data").value(Matchers.nullValue()));
+
+        assertThat(postService.findById(id)).isPresent();
+    }
+
+    @Test
+    @DisplayName("글 삭제, with wrong actorId")
+    void t13() throws Exception {
+        int id = 1;
+
+        ResultActions resultActions = mvc
+                .perform(
+                        delete("/api/v1/posts/%d?actorId=%d".formatted(id, Integer.MAX_VALUE))
+                )
+                .andDo(print());
+
+        resultActions
+                .andExpect(handler().handlerType(ApiV1PostController.class))
+                .andExpect(handler().methodName("delete"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.resultCode").value("401-1"))
+                .andExpect(jsonPath("$.msg").value("로그인 후 이용해주세요."))
+                .andExpect(jsonPath("$.data").value(Matchers.nullValue()));
+
+        assertThat(postService.findById(id)).isPresent();
+    }
+
+    @Test
+    @DisplayName("글 삭제, by not author")
+    void t14() throws Exception {
+        int id = 1;
+        Member author = postService.findById(id).get().getAuthor();
+        Member actor = memberService.findByUsername("user3").get();
+
+        assertThat(actor.getId()).isNotEqualTo(author.getId());
+
+        ResultActions resultActions = mvc
+                .perform(
+                        delete("/api/v1/posts/%d?actorId=%d".formatted(id, actor.getId()))
+                )
+                .andDo(print());
+
+        resultActions
+                .andExpect(handler().handlerType(ApiV1PostController.class))
+                .andExpect(handler().methodName("delete"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.resultCode").value("403-1"))
+                .andExpect(jsonPath("$.msg").value("권한이 없습니다."))
+                .andExpect(jsonPath("$.data").value(Matchers.nullValue()));
+
+        assertThat(postService.findById(id)).isPresent();
     }
 
 
