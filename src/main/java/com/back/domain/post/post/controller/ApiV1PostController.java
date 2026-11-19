@@ -119,9 +119,16 @@ public class ApiV1PostController {
     @Operation(summary = "수정")
     public RsData<Void> modify(
             @PathVariable int id,
+            @RequestParam(defaultValue = "0") int actorId,
             @RequestBody @Valid PostModifyReqBody reqBody
     ) {
+        Member actor = memberService.findById(actorId).orElseThrow(
+                UnauthenticatedException::new
+        );
+
         Post post = postService.findById(id).get();
+
+        post.checkActorCanModify(actor);
 
         postService.modify(post, reqBody.title, reqBody.content);
 
